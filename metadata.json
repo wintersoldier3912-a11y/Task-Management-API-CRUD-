@@ -1,0 +1,5 @@
+{
+  "name": "TaskFlow Manager",
+  "description": "A comprehensive task management dashboard with CRUD functionality, filtering, and priority tracking. Features a responsive design and local data persistence.",
+  "requestFramePermissions": []
+}
