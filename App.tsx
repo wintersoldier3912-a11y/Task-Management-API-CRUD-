@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Layout, CheckCircle, Clock, AlertCircle, Search, Filter, X, ChevronDown } from 'lucide-react';
+import { Plus, Layout, CheckCircle, Clock, AlertCircle, Search, Filter, X, ChevronDown, AlertTriangle } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, TaskFilters } from './types';
 import * as api from './services/api';
 import { TaskCard } from './components/TaskCard';
@@ -9,8 +9,14 @@ import { Modal } from './components/Modal';
 const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Form Modal State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
+  
+  // Delete Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   
   // Filters state (Applied filters)
   const [filters, setFilters] = useState<TaskFilters>({
@@ -64,13 +70,21 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDeleteTask = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this task?")) return;
+  const handleDeleteTask = (id: string) => {
+    setTaskToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete) return;
     try {
-      await api.deleteTask(id);
-      setTasks(prev => prev.filter(t => t.id !== id));
+      await api.deleteTask(taskToDelete);
+      setTasks(prev => prev.filter(t => t.id !== taskToDelete));
+      setIsDeleteModalOpen(false);
+      setTaskToDelete(null);
     } catch (error) {
       console.error("Failed to delete task", error);
+      alert("Failed to delete task");
     }
   };
 
@@ -250,6 +264,7 @@ const App: React.FC = () => {
         )}
       </main>
 
+      {/* Task Form Modal */}
       <Modal 
         isOpen={isFormOpen} 
         onClose={() => setIsFormOpen(false)}
@@ -260,6 +275,42 @@ const App: React.FC = () => {
           onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
           onCancel={() => setIsFormOpen(false)}
         />
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Delete Task"
+      >
+        <div className="space-y-6">
+          <div className="flex items-start gap-4">
+            <div className="bg-red-50 p-2 rounded-full flex-shrink-0">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-medium text-gray-900">Are you sure?</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                This action cannot be undone. This will permanently delete the task from your dashboard.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex gap-3 justify-end pt-2">
+            <button
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDeleteTask}
+              className="px-4 py-2 bg-red-600 rounded-lg text-sm font-medium text-white hover:bg-red-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            >
+              Delete Task
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
